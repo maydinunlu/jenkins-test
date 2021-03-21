@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
 
 public class DeployManager
 {
@@ -32,8 +35,32 @@ public class DeployManager
     
     private static void StartBuild(BuildPlayerOptions buildPlayerOptions)
     {
+        Debug.Log("Start build.");
+        
         var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
         var summary = report.summary;
+        
+        #region Report Log
+        
+        var log = new StringBuilder();
+        log.Append("Build Report: ");
+        
+        if (summary.result == BuildResult.Succeeded)
+        {
+            log.Append($"Success: (Size: {summary.totalSize} bytes)");
+        }
+        else if (summary.result == BuildResult.Failed)
+        {
+            log.Append("Fail!");
+        }
+        
+        log.AppendLine($"(Time: {summary.totalTime.TotalSeconds:hh\\:mm\\:ss\\:fff}");
+        log.AppendLine($"(Errors: {summary.totalErrors})");
+        log.AppendLine($"(Warnings: {summary.totalWarnings})");
+        
+        Debug.Log(log.ToString());
+        
+        #endregion
     }
 
     private static string[] GetScenes() 
@@ -49,4 +76,5 @@ public class DeployManager
         }
         return sceneList.ToArray();
     }
+    
 }
