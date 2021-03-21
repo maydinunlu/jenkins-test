@@ -12,23 +12,26 @@ public class DeployManager
     [MenuItem ("Build/Android")]
     public static void BuildAndroid()
     {
-        #region Location
+        var args = GetArgs();
+        Console.WriteLine(args.ToString());
 
-        var path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        var locationPathName = path + @"/test.apk";
-
-        #endregion
+        var buildName = args.BuildName;
+        if (args.BuildType == "Apk")
+        {
+            buildName += ".apk";
+        }
+        else if (args.BuildType == "Bundle")
+        {
+            buildName += ".aab";
+        }
+        var locationPathName = args.TargetDir + buildName;
         
-        #region BuildPlayerOptions
-
         var buildPlayerOptions = new BuildPlayerOptions
         {
             scenes = GetScenes(),
             locationPathName = locationPathName,
             target = BuildTarget.Android
         };
-
-        #endregion
         
         StartBuild(buildPlayerOptions);
     }
@@ -63,6 +66,84 @@ public class DeployManager
         #endregion
     }
 
+    private static Args GetArgs()
+    {
+        var returnValue = new Args();
+ 
+        // find: -executeMethod
+        //   +1: JenkinsBuild.BuildMacOS (Build Function)
+        //   +2: FindTheGnome
+        //   +3: D:\Jenkins\Builds\Find the Gnome\47\output (Target)
+        var args = System.Environment.GetCommandLineArgs();
+        var execMethodArgPos = -1;
+        var allArgsFound = false;
+        
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "-executeMethod")
+            {
+                execMethodArgPos = i;
+            }
+            
+            var realPos = execMethodArgPos == -1 ? -1 : i - execMethodArgPos - 2;
+            if (realPos < 0)
+            {
+                continue;
+            }
+
+            if (realPos == 0)
+            {
+                returnValue.BuildName = args[i];
+            }
+            else if (realPos == 1)
+            {
+                returnValue.Version = args[i];
+            }
+            else if (realPos == 2)
+            {
+                returnValue.BuildType = args[i];
+            }
+            else if (realPos == 3)
+            {
+                returnValue.Development = Convert.ToBoolean(args[i]);
+            }
+            else if (realPos == 4)
+            {
+                returnValue.SRDebugEnable = Convert.ToBoolean(args[i]);
+            }
+            else if (realPos == 5)
+            {
+                returnValue.AnalyticsEnable = Convert.ToBoolean(args[i]);
+            }
+            else if (realPos == 6)
+            {
+                returnValue.PlayFabTitleId = args[i];
+            }
+            else if (realPos == 7)
+            {
+                returnValue.GameGrowthEnvironment = args[i];
+            }
+                
+            if (realPos == 8)
+            {
+                returnValue.TargetDir = args[i];
+                if (!returnValue.TargetDir.EndsWith(System.IO.Path.DirectorySeparatorChar + ""))
+                {
+                    returnValue.TargetDir += System.IO.Path.DirectorySeparatorChar;
+                } 
+ 
+                allArgsFound = true;
+            }
+        }
+
+        if (!allArgsFound)
+        {
+            Console.WriteLine("[JenkinsBuild] Incorrect Parameters for -executeMethod Format: -executeMethod JenkinsBuild.BuildWindows64 <app name> <output dir>");
+        }
+            
+        return returnValue;
+    }
+
     private static string[] GetScenes() 
     {
         var sceneList = new List<string>();
@@ -77,4 +158,31 @@ public class DeployManager
         return sceneList.ToArray();
     }
     
+    private class Args
+    {
+        public string BuildName { get; set; }
+        public string Version { get; set; }
+        public string BuildType { get; set; } // Apk, Bundle
+        public bool Development { get; set; }
+        public bool SRDebugEnable { get; set; }
+        public bool AnalyticsEnable { get; set; }
+        public string PlayFabTitleId { get; set; }
+        public string GameGrowthEnvironment { get; set; }
+        public string TargetDir = "~/Desktop";
+
+        public override string ToString()
+        {
+            var log = $"Build Args: ";
+            log += $"(BuildName: {BuildName}";
+            log += $"(BuildType: {BuildType}";
+            log += $"(Development: {Development}";
+            log += $"(SRDebugEnable: {SRDebugEnable}";
+            log += $"(AnalyticsEnable: {AnalyticsEnable}";
+            log += $"(PlayFabTitleId: {PlayFabTitleId}";
+            log += $"(GameGrowthEnvironment: {GameGrowthEnvironment}";
+            log += $"(TargetDir: {TargetDir}";
+
+            return log;
+        }
+    }
 }
